@@ -2,12 +2,11 @@ const express = require('express');
 var cors = require('cors');
 const redis = require('redis');
 const app = express();
-const Docker = require('dockerode');
-const docker = new Docker({ socketPath: '/var/run/docker.sock' });
 
 let port = 3000;
 
 const User = require('./model/user');
+const Container = require('./model/container');
 
 (async () => {
     try {
@@ -56,36 +55,57 @@ app.get('/user/:id', async (req, res) => {
 
 app.post('/instance', async (req, res) => {
     const clientId = req.body.clientId;
-    const user = await new User(clientId).get();
+    const user = new User(clientId);
+    await user.get();
     const userData = user?.getData();
 
-    const resp = {
-        status: 'ok',
-        message: 'Instance already running',
-        client: userData,
-    };
-
-    if (!userData.running) {
-        const port = userData.port;
-    
-        docker.run('osaas', [], process.stdout, {
-            name: `osaas-${clientId}`,
-            Env: [ `VNC_PW=${ clientId }` ],
-            HostConfig:{
-                AutoRemove: true,
-                PortBindings: { "6901/tcp": [{ HostPort: `${port}` }] },
-                // have to find a way of binding.
-                // Binds: [ `${ __dirname }/userdata/${ userData.clientId }:/home/user`],
-            },
-            ExposedPorts: { "6901/tcp": {} },
+    const container = new Container(clientId, userData.port);
+    // check if container is running
+    if (await container.isRunning()) {
+        res.send({
+            status: 'exists',
+            message: 'Instance already running',
+            running: true,
+            client: userData,
         });
-    
-        resp.message = 'Instance created';
-        await user.setRunning(true);
-        res.status(201);
+        return;
     }
 
-    res.send(resp);
+    container.run();
+    res.status(201).send({
+        status: 'ok',
+        message: 'Instance created',
+        running: true,
+        client: userData,
+    });
+    return;
+});
+
+app.get('/instance/:id', async (req, res) => {
+    const clientId = req.params.id;
+    const user = new User(clientId);
+    await user.get();
+    const userData = user?.getData();
+
+    const container = new Container(clientId, userData.port);
+    // check if container is running
+    if (await container.isRunning()) {
+        res.send({
+            status: 'ok',
+            message: 'Instance running',
+            running: true,
+            client: userData,
+        });
+        return;
+    }
+
+    res.status(404).send({
+        status: 'not found',
+        message: 'Instance not found',
+        running: false,
+        client: userData,
+    });
+    return;
 });
 
 // 404
