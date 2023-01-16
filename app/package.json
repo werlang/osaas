@@ -1,0 +1,22 @@
+{
+    "name": "osaas",
+    "version": "1.0.0",
+    "description": "",
+    "main": "app.js",
+    "scripts": {
+        "start": "if [$NODE_ENV == \"production\"]; then node app.js; else nodemon app.js; fi",
+        "frontend": "if [$NODE_ENV == \"production\"]; then node web.js; else nodemon web.js; fi"
+    },
+    "author": "Pablo Werlang",
+    "license": "GPLv3",
+    "dependencies": {
+        "cors": "^2.8.5",
+        "dockerode": "^3.3.4",
+        "express": "^4.17.1",
+        "redis": "^4.5.1",
+        "uuid": "^9.0.0"
+    },
+    "devDependencies": {
+        "nodemon": "^2.0.20"
+    }
+}

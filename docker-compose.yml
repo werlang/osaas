@@ -1,0 +1,36 @@
+version: '3'
+services:
+    redis:
+        image: redis:bullseye
+        volumes:
+            - redis-data:/data
+        ports:
+            - "127.0.0.1:6379:6379"
+        command: redis-server --save 20 1 --loglevel warning
+    server:
+        image: osaas-server # build it from the Dockerfile in the same directory
+        ports:
+            - "3000:3000"
+        volumes:
+            - ./app:/app
+            - node_modules:/app/node_modules
+            - /var/run/docker.sock:/var/run/docker.sock # for docker-in-docker
+        command: npm start
+        depends_on:
+            - redis
+        environment:
+            - NODE_ENV=development
+    web:
+        image: osaas-server # build it from the Dockerfile in the same directory
+        ports:
+            - "80:3000"
+        volumes:
+            - ./app:/app
+            - node_modules:/app/node_modules
+        command: npm run frontend
+volumes:
+    node_modules:
+    redis-data:
+
+
+    
