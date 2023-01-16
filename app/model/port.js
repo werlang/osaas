@@ -1,65 +1,69 @@
-const Port = {
+const server = require('net').createServer();
 
-    getAll: async function() {
-        let ports = await Port.redisClient.get('ports');
-        if (ports === null) {
-            return [];
-        }
-        try {
-            ports = JSON.parse(ports);
-        }
-        catch (error) {
-            console.log(error);
-            return false;
-        }
-        
-        return ports;
-    },
+const Port = {
+    expireTime: 1000 * 60 * 5, // 5 minutes
 
     add: async function(port) {
-        const ports = await this.getAll();
-        if (!ports) {
-            return false;
+        const portsUsed = await this.getAll();
+        portsUsed[port] = {
+            expire: Date.now() + this.expireTime,
         }
-
-        ports.push(port);
-        Port.redisClient.set('ports', JSON.stringify(ports));
+        await this.redisClient.set('ports', JSON.stringify(portsUsed));
     },
 
-    new: async function() {
-        const ports = await this.getAll();
-        if (!ports) {
-            return false;
-        }
-
-        if (!ports.length) {
-            this.add(6901);
-            return 6901;
-        }
-
-        const min = Math.min(...ports);
-        const max = Math.max(...ports);
-
-        const filled = new Array(max - min + 1).fill(0).map((e,i) => max + i - 1);
-        const available = filled.filter(e => !ports.includes(e));
-        const port = available.length ? available[0] : max + 1;
-
-        this.add(port);
-        return port;
+    getAll: async function() {
+        return JSON.parse(await this.redisClient.get('ports') || '{}');
     },
 
-    remove: async function(port) {
+    getList: async function() {
+        let portsUsed = await this.getAll();
+        return Object.keys(portsUsed).map(port => parseInt(port));
+    },
+
+    clean: async function() {
         let ports = await this.getAll();
-        if (!ports) {
+
+        // remove expired ports
+        ports = Object.fromEntries(Object.entries(ports).filter(([port, data]) => data.expire > Date.now()));
+
+        await this.redisClient.set('ports', JSON.stringify(ports));
+    },
+
+    check: async function(port) {
+        const portsUsed = await this.getList();
+        if (portsUsed.includes(port)) {
             return false;
         }
+        return new Promise(resolve => {
+            server.once('error', function (err) {
+                if (err.code === 'EADDRINUSE') {
+                    // console.log(`Port ${ port } is already in use`);
+                    resolve(false);
+                }
+            });
+            
+            server.once('listening', function () {
+                // console.log(`Listening on port ${ port }. No errors found.`);
+                server.close();
+                resolve(true);
+            });
+            
+            server.listen(port);
+        });        
+    },
 
-        if (!ports.find(e => e === port)) {
-            return false;
+    getNew: async function(start = 6901) {
+        let port = start;
+        
+        // clean up expired ports before checking
+        await this.clean();
+
+        // check if port is available
+        while (true) {
+            this.add(port);
+            if (await this.check(port)) return port;
+            port++;
         }
-
-        ports = ports.filter(e => e !== port);
-        Port.redisClient.set('ports', JSON.stringify(ports));
     },
 
 }

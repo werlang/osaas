@@ -50,12 +50,7 @@ class User {
 
         if (this.isExpired()) {
             User.redisClient.del(this.id);
-            Port.remove(this.port);
             return false;
-        }
-
-        if (!this.port) {
-            this.port = await Port.new();
         }
 
         return this;
@@ -70,11 +65,12 @@ class User {
         this.lastLogin = Date.now();
 
         if (!this.port) {
-            this.port = await Port.new();
+            this.port = await Port.getNew();
         }
 
         const data = this.getData();
         await User.redisClient.set(this.id, JSON.stringify(data));
+        await User.clean();
 
         return this;
     }
@@ -83,6 +79,17 @@ class User {
         this.running = running;
         await this.update();
         return this;
+    }
+
+    static async clean() {
+        const keys = await User.redisClient.keys('*');
+        for (const key of keys) {
+            const user = new User(key);
+            await user.get();
+            if (user.isExpired()) {
+                await User.redisClient.del(key);
+            }
+        }
     }
 
 }

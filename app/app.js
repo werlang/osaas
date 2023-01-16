@@ -26,9 +26,6 @@ app.post('/user', async (req, res) => {
     const user = await new User().update();
     const userData = user.getData();
 
-    // token expires
-    setTimeout(async () => new User(userData.clientId).get(), User.expires);
-
     res.status(201).send({
         status: 'ok',
         message: 'Client created',
@@ -71,21 +68,16 @@ app.post('/instance', async (req, res) => {
     if (!userData.running) {
         const port = userData.port;
     
-        const portBindings = {};
-        portBindings[`${port}/tcp`] = [{
-            HostIP: "0.0.0.0",
-            HostPort: `${port}`,
-        }];
-    
         docker.run('osaas', [], process.stdout, {
             name: `osaas-${clientId}`,
             Env: [ `VNC_PW=${ clientId }` ],
             HostConfig:{
                 AutoRemove: true,
-                PortBindings: portBindings,
+                PortBindings: { "6901/tcp": [{ HostPort: `${port}` }] },
                 // have to find a way of binding.
                 // Binds: [ `${ __dirname }/userdata/${ userData.clientId }:/home/user`],
             },
+            ExposedPorts: { "6901/tcp": {} },
         });
     
         resp.message = 'Instance created';
