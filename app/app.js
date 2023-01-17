@@ -56,7 +56,12 @@ app.get('/user/:id', async (req, res) => {
 app.post('/instance', async (req, res) => {
     const clientId = req.body.clientId;
     const user = new User(clientId);
-    await user.get();
+    await user.update();
+    if (!user) {
+        res.status(404).send({ error: 'Client not found' });
+        return;
+    }
+
     const userData = user?.getData();
 
     const container = new Container(clientId, userData.port);

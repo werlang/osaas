@@ -13,8 +13,12 @@ class Container {
             Env: [ `VNC_PW=${ this.id }` ],
             HostConfig:{
                 AutoRemove: true,
-                PortBindings: { "6901/tcp": [{ HostPort: `${ this.port }` }] },
-                // have to find a way of binding.
+                PortBindings: { "6901/tcp": [{
+                    HostPort: `${ this.port }`,
+                    HostIp: ""
+                }] },
+                NetworkMode: "osaas_default",
+                // Binds: [ `${ __dirname }/payload:/usr/share/k`],
                 // Binds: [ `${ __dirname }/userdata/${ userData.clientId }:/home/user`],
             },
             ExposedPorts: { "6901/tcp": {} },

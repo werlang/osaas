@@ -1,24 +1,30 @@
 const request = async (url, options={}) => {
+    options.headers = new Headers(options.headers || {});
+    options.redirect = 'follow';
+
     if (options.body) {
-        options.headers = { 'Content-Type': 'application/json' };
+        options.headers.append('Content-Type', 'application/json');
         options.body = new URLSearchParams(options.body).toString();
     }
-    if (!options.method || options.method === 'GET') {
-        delete options.method;
-        url += '?' + new URLSearchParams(options).toString();
+    if (!options.method || options.method === 'GET' && options.query) {
+        url += '?' + new URLSearchParams(options.query).toString();
     }
 
-    return fetch(url, options)
-    .then(response => {
-        if ([200, 201].includes(response.status)) {
-            return response.json();
-        } else {
-            throw new Error(response.statusText);
+    try {
+        const response = await fetch(url, options);
+        const data = await response.text();
+
+        try {
+            return JSON.parse(data);
         }
-    })
-    .catch(error => {
-        console.log(error);
-    });
+        catch (error) {
+            return new Error(data);
+        }
+    }
+    catch (error) {
+        throw new Error(error);
+    }
+
 }
 
 export { request };
