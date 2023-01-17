@@ -76,7 +76,11 @@ app.post('/instance', async (req, res) => {
         return;
     }
 
-    container.run();
+    // TODO: fix copyFile
+    // container.run();
+    // container.copyFile('./payload/index.html', '/usr/share/kasmvnc/www');
+
+
     res.status(201).send({
         status: 'ok',
         message: 'Instance created',

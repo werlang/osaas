@@ -37,10 +37,12 @@ const User = {
 
     getInstance: async function() {
         const clientData = this.get();
+        // console.log(clientData.clientId)
 
+        // TODO: here... not sending clientId
         const response = await request(`${ this.url }/instance`, {
             method: 'POST',
-            clientId: clientData.clientId
+            body: { clientId: clientData.clientId },
         });
         console.log(response)
     },

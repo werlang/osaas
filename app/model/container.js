@@ -18,7 +18,6 @@ class Container {
                     HostIp: ""
                 }] },
                 NetworkMode: "osaas_default",
-                // Binds: [ `${ __dirname }/payload:/usr/share/k`],
                 // Binds: [ `${ __dirname }/userdata/${ userData.clientId }:/home/user`],
             },
             ExposedPorts: { "6901/tcp": {} },
@@ -32,6 +31,13 @@ class Container {
         });
         return containers.length > 0;
     }
+
+    async copyFile(src, dest) {
+        const container = docker.getContainer(`osaas-${ this.id }`);
+        console.log(container)
+        return container.putArchive(src, { path: dest });
+    }
+        
 }
 
 module.exports = Container;
