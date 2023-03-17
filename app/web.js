@@ -1,7 +1,8 @@
 const express = require('express');
 const app = express();
 
-let port = 3000;
+const port = 80;
+const host = '0.0.0.0';
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -11,12 +12,17 @@ app.get('/', async (req, res) => {
     res.sendFile('index.html');
 });
 
+app.get('/vnc', async (req, res) => {
+    res.cookie('Authorization', 'Basic ' + Buffer.from(`user:${ req.query.id }`).toString('base64'));
+    res.redirect(`//localhost:${ req.query.port }`);
+});
+
 // 404
 app.use((req, res) => {
-    res.status(404).send({ error: 'Not found' });
+    res.status(404).send({ error: 'Web: Not found' });
 });
 
 
-app.listen(port, () => {
-    console.log(`Listening to port ${port}`);
+app.listen(port, host, () => {
+    console.log(`Web: Listening on http://${ host }:${ port }`);
 });

@@ -1,18 +1,18 @@
-const request = async (url, options={}) => {
-    options.headers = new Headers(options.headers || {});
+const request = async (endpoint, options={}) => {
+    options.headers = options.headers || {};
     options.redirect = 'follow';
 
     if (options.body) {
-        options.headers.append('Content-Type', 'application/json');
+        options.headers['Content-Type'] = 'application/x-www-form-urlencoded';
         options.body = new URLSearchParams(options.body).toString();
     }
     if (!options.method || options.method === 'GET' && options.query) {
-        url += '?' + new URLSearchParams(options.query).toString();
+        endpoint += '?' + new URLSearchParams(options.query).toString();
     }
 
     try {
-        const response = await fetch(url, options);
-        const data = await response.text();
+        const url = `${ window.location.protocol }//api.${ window.location.host }`;
+        const data = await fetch(`${url}${endpoint}`, options).then(data => data.text());
 
         try {
             return JSON.parse(data);

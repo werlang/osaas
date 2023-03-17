@@ -6,11 +6,11 @@ services:
             - redis-data:/data
         ports:
             - "127.0.0.1:6379:6379"
-        command: redis-server --save 20 1 --loglevel warning
-    server:
+        networks:
+            - osaas
+    api:
         image: osaas-server # build it from the Dockerfile in the same directory
-        ports:
-            - "3000:3000"
+        build: .
         volumes:
             - ./app:/app
             - node_modules:/app/node_modules
@@ -20,17 +20,39 @@ services:
             - redis
         environment:
             - NODE_ENV=development
+        networks:
+            - osaas
     web:
         image: osaas-server # build it from the Dockerfile in the same directory
-        ports:
-            - "80:3000"
+        build: .
         volumes:
             - ./app:/app
             - node_modules:/app/node_modules
         command: npm run frontend
+        networks:
+            - osaas
+    nginx:
+        image: valian/docker-nginx-auto-ssl
+        restart: always
+        ports:
+            - "80:80"
+            - "443:443"
+        volumes:
+            - ./nginx:/etc/nginx/conf.d
+            - ./app:/app
+        environment:
+            - SITES=osaas.localhost=web;api.osaas.localhost=api
+            - FORCE_HTTPS=true
+        networks:
+            - osaas
+        depends_on:
+            - web
 volumes:
     node_modules:
     redis-data:
+networks:
+    osaas:
+        name: osaas
 
 
     

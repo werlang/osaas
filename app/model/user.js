@@ -1,4 +1,5 @@
 const uuid = require('uuid');
+const redis = require('redis');
 
 class User {
 
@@ -17,6 +18,11 @@ class User {
         }
 
         this.id = uuid.v4().split('-').join('');
+    }
+
+    static async connectRedis() {
+        User.redisClient = redis.createClient({ url: 'redis://redis:6379' });
+        await User.redisClient.connect();
     }
 
     // get user data as object
@@ -60,6 +66,7 @@ class User {
 
     // update user data
     async update() {
+        await this.get();
         this.expires = Date.now() + User.expires;
         this.lastLogin = Date.now();
 

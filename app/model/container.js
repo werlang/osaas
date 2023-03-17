@@ -17,7 +17,7 @@ class Container {
                     HostPort: `${ this.port }`,
                     HostIp: ""
                 }] },
-                NetworkMode: "osaas_default",
+                NetworkMode: "osaas",
                 // Binds: [ `${ __dirname }/userdata/${ userData.clientId }:/home/user`],
             },
             ExposedPorts: { "6901/tcp": {} },

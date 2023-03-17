@@ -1,17 +1,16 @@
 const express = require('express');
 var cors = require('cors');
-const redis = require('redis');
 const app = express();
 
-let port = 3000;
+const port = 80;
+const host = '0.0.0.0';
 
 const User = require('./model/user');
 const Container = require('./model/container');
 
 (async () => {
     try {
-        User.redisClient = redis.createClient({ url: 'redis://redis:6379' });
-        await User.redisClient.connect();
+        await User.connectRedis();
     } catch (error) {
         console.log(error);
     }
@@ -55,8 +54,8 @@ app.get('/user/:id', async (req, res) => {
 
 app.post('/instance', async (req, res) => {
     const clientId = req.body.clientId;
-    const user = new User(clientId);
-    await user.update();
+    // console.log(clientId)
+    const user = await new User(clientId).update();
     if (!user) {
         res.status(404).send({ error: 'Client not found' });
         return;
@@ -77,7 +76,7 @@ app.post('/instance', async (req, res) => {
     }
 
     // TODO: fix copyFile
-    // container.run();
+    container.run();
     // container.copyFile('./payload/index.html', '/usr/share/kasmvnc/www');
 
 
@@ -123,6 +122,6 @@ app.use((req, res) => {
 });
 
 
-app.listen(port, () => {
-    console.log(`Listening to port ${port}`);
+app.listen(port, host, () => {
+    console.log(`App: Listening on http://${ host }:${ port }`);
 });
